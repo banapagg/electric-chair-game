@@ -798,6 +798,7 @@
         let currentPhase = null; // 'SET_TRAP', 'CHOOSE_CHAIR', etc.
         let isMyTurn = false;
         let myRole = null;   // 'setter' or 'sitter' for current round
+        let currentSitterId = null; // which player id is the sitter this round
 
         // === WebSocket ===
         function connect() {
@@ -863,6 +864,7 @@
                     currentPhase = 'SET_TRAP';
                     isMyTurn = true;
                     myRole = 'setter';
+                    currentSitterId = myId === 'p1' ? 'p2' : 'p1';
                     updateGameUI();
                     hideWaitingOverlay();
                     document.getElementById('game-message').textContent =
@@ -877,6 +879,7 @@
                     currentPhase = 'SET_TRAP';
                     isMyTurn = false;
                     myRole = 'sitter';
+                    currentSitterId = myId;
                     updateGameUI();
                     showWaitingOverlay(`${msg.setterName}がトラップを仕掛けています`);
                     disableChairs();
@@ -1202,14 +1205,14 @@
                 }
             }
 
-            // Active player highlight
+            // Active player highlight - always highlight the sitter (whose score is at stake)
             const p1Stat = document.getElementById('p1-stat');
             const p2Stat = document.getElementById('p2-stat');
             p1Stat.classList.remove('active');
             p2Stat.classList.remove('active');
 
-            if (isMyTurn) {
-                document.getElementById(myId === 'p1' ? 'p1-stat' : 'p2-stat').classList.add('active');
+            if (currentSitterId) {
+                document.getElementById(currentSitterId === 'p1' ? 'p1-stat' : 'p2-stat').classList.add('active');
             }
         }
 
