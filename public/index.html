@@ -141,34 +141,6 @@
             box-shadow: 0 0 20px rgba(255, 215, 0, 0.3);
         }
 
-        .room-code-display {
-            font-size: 48px;
-            font-weight: 900;
-            color: var(--accent-color);
-            letter-spacing: 8px;
-            margin: 20px 0;
-            text-shadow: 0 0 20px rgba(255, 215, 0, 0.5);
-        }
-
-        .lobby-divider {
-            display: flex;
-            align-items: center;
-            margin: 25px 0;
-            color: #5a6ba8;
-            font-weight: 700;
-        }
-
-        .lobby-divider::before, .lobby-divider::after {
-            content: '';
-            flex: 1;
-            height: 1px;
-            background: #3d4a78;
-        }
-
-        .lobby-divider span {
-            padding: 0 15px;
-        }
-
         .waiting-text {
             color: #9aa5d1;
             font-size: 16px;
@@ -678,25 +650,13 @@
 
         <button class="btn" onclick="quickMatch()" id="quick-match-btn">🎮 対戦する！</button>
 
-        <div class="lobby-divider"><span>ルームコードで合流</span></div>
-
-        <div style="display: flex; gap: 8px;">
-            <button class="btn btn-secondary" onclick="createRoom()" style="flex: 1; font-size: 14px; padding: 12px;">ルーム作成</button>
-            <input type="text" id="room-code-input" maxlength="4" placeholder="コード" style="flex: 1; padding: 12px; font-size: 18px; border: 2px solid #3d4a78; border-radius: 12px; background: rgba(0,0,0,0.3); color: #fff; font-family: 'Noto Sans JP', sans-serif; font-weight: 700; text-transform: uppercase; letter-spacing: 4px; text-align: center;">
-            <button class="btn btn-secondary" onclick="joinRoom()" style="flex: 1; font-size: 14px; padding: 12px;">参加</button>
-        </div>
-
         <div id="lobby-error" class="error-text"></div>
     </div>
 
-    <!-- Waiting Screen (auto-match & room) -->
+    <!-- Waiting Screen -->
     <div id="waiting-room-screen" class="lobby-screen hidden">
         <h1>⚡ 電気イスゲーム ⚡</h1>
-        <h2 id="waiting-title">対戦相手を探しています</h2>
-        <div id="waiting-room-code" class="hidden">
-            <p style="color: #9aa5d1; font-size: 14px; margin-bottom: 10px;">このコードを相手に伝えてください</p>
-            <div id="room-code-display" class="room-code-display">----</div>
-        </div>
+        <h2>対戦相手を探しています</h2>
         <div class="waiting-text">対戦相手を待っています<span class="dots"></span></div>
         <button class="btn btn-secondary" onclick="cancelMatch()" style="margin-top: 20px; max-width: 200px;">キャンセル</button>
     </div>
@@ -883,59 +843,16 @@
             document.getElementById('lobby-screen').classList.remove('hidden');
         }
 
-        function createRoom() {
-            const name = document.getElementById('my-name').value.trim() || 'Player 1';
-            myName = name;
-            audioCtx.resume();
-            sendMsg({ type: 'CREATE_ROOM', playerName: name });
-        }
-
-        function joinRoom() {
-            const name = document.getElementById('my-name').value.trim() || 'Player 2';
-            const code = document.getElementById('room-code-input').value.trim().toUpperCase();
-            if (code.length !== 4) {
-                document.getElementById('lobby-error').textContent = '4文字のルームコードを入力してください';
-                return;
-            }
-            myName = name;
-            audioCtx.resume();
-            sendMsg({ type: 'JOIN_ROOM', roomCode: code, playerName: name });
-        }
-
         // === Message Handler ===
         function handleServerMessage(msg) {
             switch (msg.type) {
                 case 'WAITING_FOR_MATCH':
                     document.getElementById('lobby-screen').classList.add('hidden');
                     document.getElementById('waiting-room-screen').classList.remove('hidden');
-                    document.getElementById('waiting-title').textContent = '対戦相手を探しています';
-                    document.getElementById('waiting-room-code').classList.add('hidden');
                     break;
 
                 case 'MATCH_FOUND':
                     myId = msg.yourId;
-                    opponentName = msg.opponentName;
-                    document.getElementById('waiting-room-screen').classList.add('hidden');
-                    showGameScreen();
-                    break;
-
-                case 'ROOM_CREATED':
-                    myId = msg.yourId;
-                    document.getElementById('lobby-screen').classList.add('hidden');
-                    document.getElementById('waiting-room-screen').classList.remove('hidden');
-                    document.getElementById('waiting-title').textContent = 'ルーム作成完了！';
-                    document.getElementById('waiting-room-code').classList.remove('hidden');
-                    document.getElementById('room-code-display').textContent = msg.roomCode;
-                    break;
-
-                case 'ROOM_JOINED':
-                    myId = msg.yourId;
-                    opponentName = msg.opponentName;
-                    document.getElementById('lobby-screen').classList.add('hidden');
-                    showGameScreen();
-                    break;
-
-                case 'OPPONENT_JOINED':
                     opponentName = msg.opponentName;
                     document.getElementById('waiting-room-screen').classList.add('hidden');
                     showGameScreen();
