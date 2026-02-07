@@ -1132,8 +1132,11 @@
             const chosenDiv = document.getElementById(`chair-${msg.chosenChair}`);
             const trapDiv = document.getElementById(`chair-${msg.trapChair}`);
 
-            // Highlight chosen chair
+            // Highlight chosen chair first
             chosenDiv.classList.add('selected');
+
+            // Show result message in message area
+            const sitterName = msg.sitterId === myId ? myName : opponentName;
 
             setTimeout(() => {
                 if (msg.result === 'OUT') {
@@ -1142,6 +1145,8 @@
                     chosenDiv.classList.remove('selected');
                     chosenDiv.classList.add('result-out');
                     showBigResult('⚡ ビリビリ! ⚡', 'res-out-txt');
+                    document.getElementById('game-message').innerHTML =
+                        `💥 ${sitterName}が <strong>${msg.chosenChair}</strong> に座った → トラップ <strong>${msg.trapChair}</strong> でビリビリ！`;
                 } else {
                     sounds.safe();
                     chosenDiv.classList.remove('selected');
@@ -1157,14 +1162,21 @@
                     if (trapDiv && msg.trapChair !== msg.chosenChair) {
                         trapDiv.classList.add('revealed-trap');
                     }
+
+                    document.getElementById('game-message').innerHTML =
+                        `✨ ${sitterName}が <strong>${msg.chosenChair}</strong> に座った → セーフ！ (トラップは <strong>${msg.trapChair}</strong>)`;
                 }
 
                 updateScores(msg);
                 renderScoreTable(msg);
 
+                // Hide big result overlay after 1.5s, keep chairs visible longer
+                setTimeout(() => {
+                    document.getElementById('result-overlay').classList.add('hidden');
+                }, 1500);
+
                 setTimeout(() => {
                     document.body.classList.remove('shock-effect');
-                    document.getElementById('result-overlay').classList.add('hidden');
                     resetChairVisuals();
                     // Update removed chairs
                     if (msg.chairs) {
@@ -1179,7 +1191,7 @@
                     document.getElementById('game-message').textContent = '次のラウンドを準備中...';
                     document.getElementById('action-btn').textContent = '待機中...';
                     document.getElementById('action-btn').disabled = true;
-                }, 2500);
+                }, 3500);
             }, 800);
         }
 
