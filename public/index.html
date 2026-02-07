@@ -1,0 +1,1295 @@
+<!DOCTYPE html>
+<html lang="ja">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+    <title>⚡ 電気イスゲーム ⚡</title>
+    <style>
+        @import url('https://fonts.googleapis.com/css2?family=Noto+Sans+JP:wght@700;900&display=swap');
+
+        :root {
+            --bg-color: #0a0e27;
+            --text-color: #fff;
+            --accent-color: #ffd700;
+            --accent-glow: #ffed4e;
+            --danger-color: #ff3366;
+            --danger-glow: #ff6b9d;
+            --safe-color: #00ff88;
+            --safe-glow: #66ffbb;
+            --card-bg: linear-gradient(135deg, #1e2847 0%, #2d3561 100%);
+            --card-border: rgba(255, 255, 255, 0.1);
+        }
+
+        * {
+            box-sizing: border-box;
+            -webkit-tap-highlight-color: transparent;
+        }
+
+        body {
+            font-family: 'Noto Sans JP', sans-serif;
+            background: radial-gradient(ellipse at top, #1a1f3a 0%, var(--bg-color) 60%);
+            color: var(--text-color);
+            text-align: center;
+            margin: 0;
+            padding: 15px;
+            user-select: none;
+            touch-action: manipulation;
+            overflow-x: hidden;
+            min-height: 100vh;
+            position: relative;
+        }
+
+        body::before {
+            content: '';
+            position: fixed;
+            top: 0; left: 0; width: 100%; height: 100%;
+            background:
+                radial-gradient(circle at 20% 80%, rgba(255, 215, 0, 0.05) 0%, transparent 50%),
+                radial-gradient(circle at 80% 20%, rgba(255, 51, 102, 0.05) 0%, transparent 50%);
+            pointer-events: none;
+            z-index: 0;
+            animation: bgPulse 8s ease-in-out infinite;
+        }
+
+        @keyframes bgPulse {
+            0%, 100% { opacity: 0.3; }
+            50% { opacity: 0.6; }
+        }
+
+        .container {
+            max-width: 900px;
+            margin: 0 auto;
+            padding-bottom: 90px;
+            position: relative;
+            z-index: 1;
+        }
+
+        h1 {
+            margin: 15px 0;
+            font-size: 32px;
+            font-weight: 900;
+            background: linear-gradient(135deg, var(--accent-color) 0%, var(--accent-glow) 50%, var(--accent-color) 100%);
+            -webkit-background-clip: text;
+            -webkit-text-fill-color: transparent;
+            background-clip: text;
+            letter-spacing: 2px;
+            animation: titleGlow 3s ease-in-out infinite;
+            filter: drop-shadow(0 0 10px rgba(255, 215, 0, 0.4));
+        }
+
+        @keyframes titleGlow {
+            0%, 100% { filter: drop-shadow(0 0 10px rgba(255, 215, 0, 0.4)); }
+            50% { filter: drop-shadow(0 0 20px rgba(255, 215, 0, 0.8)); }
+        }
+
+        .win-cond {
+            font-size: 13px;
+            color: #9aa5d1;
+            margin-bottom: 20px;
+            font-weight: 700;
+            text-shadow: 0 2px 4px rgba(0,0,0,0.5);
+            letter-spacing: 0.5px;
+        }
+
+        /* Lobby Screen */
+        .lobby-screen {
+            max-width: 400px;
+            margin: 50px auto;
+            padding: 30px;
+            background: var(--card-bg);
+            border-radius: 20px;
+            border: 2px solid var(--card-border);
+            box-shadow: 0 10px 40px rgba(0,0,0,0.5);
+        }
+
+        .lobby-screen h2 {
+            font-size: 24px;
+            margin-bottom: 20px;
+            color: var(--accent-color);
+        }
+
+        .input-group {
+            margin-bottom: 20px;
+            text-align: left;
+        }
+
+        .input-group label {
+            display: block;
+            font-size: 14px;
+            margin-bottom: 8px;
+            color: #9aa5d1;
+            font-weight: 700;
+        }
+
+        .input-group input {
+            width: 100%;
+            padding: 15px;
+            font-size: 18px;
+            border: 2px solid #3d4a78;
+            border-radius: 12px;
+            background: rgba(0,0,0,0.3);
+            color: #fff;
+            font-family: 'Noto Sans JP', sans-serif;
+            font-weight: 700;
+            transition: all 0.3s;
+            text-align: center;
+        }
+
+        .input-group input:focus {
+            outline: none;
+            border-color: var(--accent-color);
+            box-shadow: 0 0 20px rgba(255, 215, 0, 0.3);
+        }
+
+        .room-code-display {
+            font-size: 48px;
+            font-weight: 900;
+            color: var(--accent-color);
+            letter-spacing: 8px;
+            margin: 20px 0;
+            text-shadow: 0 0 20px rgba(255, 215, 0, 0.5);
+        }
+
+        .lobby-divider {
+            display: flex;
+            align-items: center;
+            margin: 25px 0;
+            color: #5a6ba8;
+            font-weight: 700;
+        }
+
+        .lobby-divider::before, .lobby-divider::after {
+            content: '';
+            flex: 1;
+            height: 1px;
+            background: #3d4a78;
+        }
+
+        .lobby-divider span {
+            padding: 0 15px;
+        }
+
+        .waiting-text {
+            color: #9aa5d1;
+            font-size: 16px;
+            font-weight: 700;
+            animation: waitPulse 2s ease-in-out infinite;
+        }
+
+        @keyframes waitPulse {
+            0%, 100% { opacity: 0.5; }
+            50% { opacity: 1; }
+        }
+
+        .error-text {
+            color: var(--danger-color);
+            font-size: 14px;
+            font-weight: 700;
+            margin-top: 10px;
+            min-height: 1.4em;
+        }
+
+        /* Score Table */
+        .score-table-container {
+            overflow-x: auto;
+            margin-bottom: 20px;
+            background: rgba(0,0,0,0.2);
+            padding: 15px;
+            border-radius: 16px;
+            border: 1px solid rgba(255,255,255,0.05);
+        }
+
+        .score-table {
+            width: 100%;
+            border-collapse: collapse;
+            font-size: 13px;
+            min-width: 600px;
+        }
+
+        .score-table th, .score-table td {
+            padding: 10px 6px;
+            border: 1px solid rgba(255,255,255,0.1);
+            text-align: center;
+        }
+
+        .score-table thead th {
+            background: linear-gradient(135deg, #2a3356 0%, #1e2440 100%);
+            color: var(--accent-color);
+            font-weight: 900;
+            font-size: 12px;
+        }
+
+        .score-table tbody td {
+            background: rgba(30, 36, 64, 0.5);
+            color: #fff;
+            font-weight: 700;
+        }
+
+        .score-table .player-name { text-align: left; font-size: 14px; font-weight: 900; color: var(--accent-color); }
+        .score-table .current-inning { background: rgba(255, 215, 0, 0.2) !important; border: 2px solid var(--accent-color) !important; }
+        .score-table .total-score { background: rgba(0, 255, 136, 0.2) !important; color: var(--safe-color); font-size: 16px; font-weight: 900; }
+        .score-table .remaining-life { background: rgba(255, 51, 102, 0.2) !important; color: var(--danger-color); font-weight: 900; }
+        .score-table .inning-score-safe { color: var(--safe-color); font-weight: 900; }
+        .score-table .inning-score-out { color: var(--danger-color); font-weight: 900; }
+
+        .you-marker {
+            font-size: 10px;
+            color: var(--safe-color);
+            display: block;
+        }
+
+        /* Status Board */
+        .status-board {
+            display: flex;
+            justify-content: space-between;
+            gap: 12px;
+            margin-bottom: 20px;
+        }
+
+        .player-stat {
+            flex: 1;
+            background: var(--card-bg);
+            padding: 15px 10px;
+            border-radius: 16px;
+            border: 2px solid var(--card-border);
+            box-shadow: 0 8px 16px rgba(0,0,0,0.4), inset 0 1px 0 rgba(255,255,255,0.1);
+            transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
+            position: relative;
+            overflow: hidden;
+        }
+
+        .player-stat::before {
+            content: '';
+            position: absolute;
+            top: 0; left: 0; right: 0; height: 3px;
+            background: linear-gradient(90deg, transparent, var(--accent-color), transparent);
+            opacity: 0;
+            transition: opacity 0.3s;
+        }
+
+        .player-stat.active {
+            border-color: var(--accent-color);
+            box-shadow: 0 0 30px rgba(255, 215, 0, 0.4), 0 8px 16px rgba(0,0,0,0.4), inset 0 1px 0 rgba(255,255,255,0.2);
+            transform: scale(1.05) translateY(-2px);
+        }
+
+        .player-stat.active::before {
+            opacity: 1;
+            animation: scanline 2s linear infinite;
+        }
+
+        @keyframes scanline { from { transform: translateX(-100%); } to { transform: translateX(100%); } }
+
+        .player-name-display {
+            font-size: 16px;
+            font-weight: 900;
+            color: var(--accent-color);
+            letter-spacing: 1px;
+            margin-bottom: 8px;
+        }
+
+        .player-stat.active .player-name-display { color: var(--accent-glow); }
+
+        .score {
+            font-size: 36px;
+            font-weight: 900;
+            margin: 8px 0;
+            background: linear-gradient(135deg, #fff 0%, #e0e7ff 100%);
+            -webkit-background-clip: text;
+            -webkit-text-fill-color: transparent;
+            background-clip: text;
+            filter: drop-shadow(0 2px 8px rgba(255,255,255,0.3));
+            line-height: 1;
+        }
+
+        .shocks {
+            color: var(--danger-color);
+            font-size: 15px;
+            font-weight: 700;
+            text-shadow: 0 0 10px rgba(255, 51, 102, 0.5);
+            letter-spacing: 1px;
+        }
+
+        .message-area {
+            font-size: 18px;
+            margin-bottom: 20px;
+            min-height: 1.6em;
+            font-weight: 700;
+            color: #fff;
+            text-shadow: 0 2px 8px rgba(0,0,0,0.5);
+            padding: 12px 20px;
+            background: rgba(255, 255, 255, 0.05);
+            border-radius: 12px;
+            border: 1px solid rgba(255, 255, 255, 0.1);
+            backdrop-filter: blur(10px);
+            letter-spacing: 0.5px;
+        }
+
+        .chairs-container {
+            display: grid;
+            grid-template-columns: repeat(3, 1fr);
+            gap: 10px;
+            max-width: 380px;
+            margin: 0 auto;
+            padding: 15px;
+            background: rgba(0, 0, 0, 0.2);
+            border-radius: 20px;
+            border: 1px solid rgba(255, 255, 255, 0.05);
+            box-shadow: 0 10px 40px rgba(0,0,0,0.4), inset 0 1px 0 rgba(255,255,255,0.05);
+        }
+
+        .chair {
+            background: linear-gradient(145deg, #2a3356 0%, #1e2440 100%);
+            color: #fff;
+            font-size: 28px;
+            font-weight: 900;
+            aspect-ratio: 1;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            border-radius: 16px;
+            cursor: pointer;
+            border: 3px solid #3d4a78;
+            box-shadow: 0 6px 12px rgba(0,0,0,0.4), inset 0 1px 0 rgba(255,255,255,0.1), inset 0 -2px 0 rgba(0,0,0,0.3);
+            transition: all 0.2s cubic-bezier(0.4, 0, 0.2, 1);
+            position: relative;
+            overflow: hidden;
+        }
+
+        .chair::before {
+            content: '⚡';
+            position: absolute;
+            font-size: 60px;
+            opacity: 0.03;
+            transform: rotate(-15deg);
+            pointer-events: none;
+        }
+
+        .chair:active { transform: scale(0.95); }
+        .chair:hover:not(.removed):not(.disabled) {
+            border-color: #5a6ba8;
+            box-shadow: 0 8px 16px rgba(0,0,0,0.5), 0 0 20px rgba(90, 107, 168, 0.3);
+        }
+
+        .chair.removed { visibility: hidden; pointer-events: none; transform: scale(0); opacity: 0; }
+
+        .chair.disabled {
+            opacity: 0.4;
+            cursor: not-allowed;
+            pointer-events: none;
+        }
+
+        .chair.selected {
+            background: linear-gradient(145deg, var(--accent-color) 0%, #ffed4e 100%);
+            color: #000;
+            border-color: #fff;
+            box-shadow: 0 0 30px rgba(255, 215, 0, 0.6), 0 8px 16px rgba(255, 215, 0, 0.4), inset 0 2px 0 rgba(255,255,255,0.5);
+            transform: scale(1.1);
+            animation: selectedPulse 1s ease-in-out infinite;
+        }
+
+        @keyframes selectedPulse {
+            0%, 100% { box-shadow: 0 0 30px rgba(255, 215, 0, 0.6), 0 8px 16px rgba(255, 215, 0, 0.4); }
+            50% { box-shadow: 0 0 40px rgba(255, 215, 0, 0.8), 0 8px 20px rgba(255, 215, 0, 0.6); }
+        }
+
+        .chair.result-safe {
+            background: linear-gradient(145deg, var(--safe-color) 0%, var(--safe-glow) 100%) !important;
+            color: #000 !important;
+            border-color: #fff !important;
+            box-shadow: 0 0 40px var(--safe-color), 0 0 80px rgba(0, 255, 136, 0.4), inset 0 0 20px rgba(255,255,255,0.5) !important;
+            animation: safeExplosion 0.6s cubic-bezier(0.4, 0, 0.2, 1);
+            z-index: 10;
+        }
+
+        @keyframes safeExplosion {
+            0% { transform: scale(0.8); opacity: 0; }
+            50% { transform: scale(1.3); }
+            100% { transform: scale(1); opacity: 1; }
+        }
+
+        .chair.result-out {
+            background: linear-gradient(145deg, var(--danger-color) 0%, var(--danger-glow) 100%) !important;
+            color: #fff !important;
+            border-color: #fff !important;
+            box-shadow: 0 0 50px var(--danger-color), 0 0 100px rgba(255, 51, 102, 0.5) !important;
+            animation: shockPulse 0.1s ease-in-out 5;
+            z-index: 10;
+        }
+
+        @keyframes shockPulse {
+            0%, 100% { transform: scale(1) rotate(0deg); }
+            25% { transform: scale(1.15) rotate(-3deg); }
+            75% { transform: scale(1.15) rotate(3deg); }
+        }
+
+        .chair.revealed-trap {
+            border: 3px dashed var(--danger-color) !important;
+            background: linear-gradient(145deg, rgba(255, 51, 102, 0.2) 0%, rgba(255, 51, 102, 0.1) 100%) !important;
+            animation: trapReveal 0.5s ease-out;
+        }
+
+        @keyframes trapReveal { from { opacity: 0; transform: scale(1.2); } to { opacity: 1; transform: scale(1); } }
+
+        .chair.revealed-trap::after {
+            content: '⚡';
+            position: absolute;
+            font-size: 20px;
+            top: 4px; right: 6px;
+            color: var(--danger-color);
+            filter: drop-shadow(0 0 8px var(--danger-color));
+            animation: zapFlicker 0.5s ease-in-out infinite;
+        }
+
+        @keyframes zapFlicker { 0%, 100% { opacity: 1; } 50% { opacity: 0.5; } }
+
+        .point-popup {
+            position: absolute;
+            top: 50%; left: 50%;
+            transform: translate(-50%, -50%);
+            font-size: 32px;
+            color: #fff;
+            font-weight: 900;
+            text-shadow: 0 0 10px var(--safe-color), 0 0 20px var(--safe-color);
+            pointer-events: none;
+            animation: popupFloat 1.2s cubic-bezier(0.4, 0, 0.2, 1) forwards;
+            z-index: 100;
+        }
+
+        @keyframes popupFloat {
+            0% { opacity: 0; transform: translate(-50%, -50%) scale(0.5); }
+            30% { opacity: 1; transform: translate(-50%, -80%) scale(1.3); }
+            100% { opacity: 0; transform: translate(-50%, -150%) scale(1); }
+        }
+
+        .btn-container {
+            position: fixed;
+            bottom: 20px; left: 0;
+            width: 100%;
+            padding: 0 20px;
+            box-sizing: border-box;
+            z-index: 50;
+        }
+
+        .btn {
+            background: linear-gradient(135deg, var(--accent-color) 0%, var(--accent-glow) 100%);
+            color: #000;
+            border: none;
+            padding: 18px 30px;
+            font-size: 20px;
+            font-weight: 900;
+            border-radius: 50px;
+            cursor: pointer;
+            width: 100%;
+            max-width: 380px;
+            box-shadow: 0 6px 0 #c09020, 0 10px 25px rgba(255, 215, 0, 0.4);
+            transition: all 0.15s cubic-bezier(0.4, 0, 0.2, 1);
+            letter-spacing: 1px;
+            text-shadow: 0 1px 2px rgba(0,0,0,0.2);
+            position: relative;
+            overflow: hidden;
+        }
+
+        .btn::before {
+            content: '';
+            position: absolute;
+            top: 0; left: -100%;
+            width: 100%; height: 100%;
+            background: linear-gradient(90deg, transparent, rgba(255,255,255,0.3), transparent);
+            transition: left 0.5s;
+        }
+
+        .btn:hover::before { left: 100%; }
+
+        .btn:active {
+            transform: translateY(6px);
+            box-shadow: 0 0px 0 #c09020, 0 4px 15px rgba(255, 215, 0, 0.4);
+        }
+
+        .btn:disabled {
+            background: linear-gradient(135deg, #4a5273 0%, #3a4159 100%);
+            color: #6b7599;
+            box-shadow: 0 3px 0 #2a2f45, 0 5px 15px rgba(0,0,0,0.3);
+            cursor: not-allowed;
+            transform: none;
+        }
+
+        .btn:disabled:active { transform: none; }
+
+        .btn-secondary {
+            background: linear-gradient(135deg, #3d4a78 0%, #2a3356 100%);
+            color: #9aa5d1;
+            box-shadow: 0 4px 0 #1e2440, 0 8px 20px rgba(0,0,0,0.3);
+        }
+
+        .btn-secondary:active {
+            box-shadow: 0 0px 0 #1e2440, 0 4px 12px rgba(0,0,0,0.3);
+        }
+
+        .result-overlay {
+            position: fixed;
+            top: 0; left: 0; width: 100%; height: 100%;
+            background: rgba(0, 0, 0, 0.85);
+            backdrop-filter: blur(20px);
+            display: flex;
+            flex-direction: column;
+            justify-content: center;
+            align-items: center;
+            z-index: 100;
+            pointer-events: none;
+        }
+
+        .result-big-text {
+            font-size: 48px;
+            font-weight: 900;
+            margin-bottom: 20px;
+            text-shadow: 0 0 30px currentColor;
+            letter-spacing: 2px;
+        }
+
+        .res-safe-txt {
+            color: var(--safe-color);
+            animation: resultZoomIn 0.6s cubic-bezier(0.18, 0.89, 0.32, 1.28);
+            filter: drop-shadow(0 0 30px var(--safe-color));
+        }
+
+        .res-out-txt {
+            color: var(--danger-color);
+            animation: resultShake 0.5s ease-in-out;
+            filter: drop-shadow(0 0 40px var(--danger-color));
+        }
+
+        @keyframes resultZoomIn {
+            0% { transform: scale(0) rotate(-180deg); opacity: 0; }
+            60% { transform: scale(1.2) rotate(10deg); }
+            100% { transform: scale(1) rotate(0deg); opacity: 1; }
+        }
+
+        @keyframes resultShake {
+            0%, 100% { transform: translateX(0) rotate(0deg); }
+            10%, 30%, 50%, 70%, 90% { transform: translateX(-10px) rotate(-5deg); }
+            20%, 40%, 60%, 80% { transform: translateX(10px) rotate(5deg); }
+        }
+
+        body.shock-effect {
+            animation: bodyShockWave 0.6s cubic-bezier(0.4, 0, 0.2, 1);
+        }
+
+        @keyframes bodyShockWave {
+            0% { background: radial-gradient(ellipse at center, var(--danger-color) 0%, var(--bg-color) 60%); filter: brightness(1.5) saturate(1.5); }
+            10%, 30%, 50%, 70%, 90% { transform: translateX(-8px); }
+            20%, 40%, 60%, 80% { transform: translateX(8px); }
+            100% { background: radial-gradient(ellipse at top, #1a1f3a 0%, var(--bg-color) 60%); transform: translateX(0); filter: brightness(1) saturate(1); }
+        }
+
+        /* Waiting overlay */
+        .waiting-overlay {
+            position: fixed;
+            top: 0; left: 0; width: 100%; height: 100%;
+            background: rgba(0, 0, 0, 0.7);
+            backdrop-filter: blur(5px);
+            display: flex;
+            flex-direction: column;
+            justify-content: center;
+            align-items: center;
+            z-index: 80;
+        }
+
+        .waiting-overlay .waiting-icon {
+            font-size: 64px;
+            animation: waitBounce 2s ease-in-out infinite;
+        }
+
+        @keyframes waitBounce {
+            0%, 100% { transform: translateY(0) scale(1); }
+            50% { transform: translateY(-15px) scale(1.1); }
+        }
+
+        .waiting-overlay .waiting-msg {
+            font-size: 20px;
+            font-weight: 900;
+            color: #9aa5d1;
+            margin-top: 20px;
+            animation: waitPulse 2s ease-in-out infinite;
+        }
+
+        .dots::after {
+            content: '';
+            animation: dots 1.5s steps(4) infinite;
+        }
+
+        @keyframes dots {
+            0% { content: ''; }
+            25% { content: '.'; }
+            50% { content: '..'; }
+            75% { content: '...'; }
+        }
+
+        .connection-status {
+            position: fixed;
+            top: 10px;
+            right: 10px;
+            font-size: 12px;
+            padding: 6px 12px;
+            border-radius: 20px;
+            font-weight: 700;
+            z-index: 200;
+        }
+
+        .connection-status.connected {
+            background: rgba(0, 255, 136, 0.2);
+            color: var(--safe-color);
+            border: 1px solid rgba(0, 255, 136, 0.3);
+        }
+
+        .connection-status.disconnected {
+            background: rgba(255, 51, 102, 0.2);
+            color: var(--danger-color);
+            border: 1px solid rgba(255, 51, 102, 0.3);
+        }
+
+        @media (max-height: 750px) {
+            .container { padding-bottom: 85px; }
+            .btn-container { bottom: 12px; }
+            h1 { font-size: 28px; margin: 10px 0; }
+            .chairs-container { padding: 10px; gap: 8px; }
+        }
+
+        @media (max-width: 380px) {
+            .chair { font-size: 24px; }
+            .score { font-size: 30px; }
+        }
+
+        .hidden { display: none !important; }
+    </style>
+</head>
+<body>
+    <div id="connection-status" class="connection-status disconnected">切断中</div>
+
+    <!-- Lobby Screen -->
+    <div id="lobby-screen" class="lobby-screen">
+        <h1>⚡ 電気イスゲーム ⚡</h1>
+        <h2>オンライン対戦</h2>
+
+        <div class="input-group">
+            <label for="my-name">あなたの名前</label>
+            <input type="text" id="my-name" maxlength="10" placeholder="例：たろう">
+        </div>
+
+        <button class="btn" onclick="createRoom()" id="create-btn" style="margin-bottom: 15px;">ルームを作成</button>
+
+        <div class="lobby-divider"><span>または</span></div>
+
+        <div class="input-group">
+            <label for="room-code-input">ルームコードを入力</label>
+            <input type="text" id="room-code-input" maxlength="4" placeholder="例：ABCD" style="text-transform: uppercase; letter-spacing: 8px; font-size: 24px;">
+        </div>
+
+        <button class="btn btn-secondary" onclick="joinRoom()" id="join-btn">ルームに参加</button>
+
+        <div id="lobby-error" class="error-text"></div>
+    </div>
+
+    <!-- Waiting Room Screen -->
+    <div id="waiting-room-screen" class="lobby-screen hidden">
+        <h1>⚡ 電気イスゲーム ⚡</h1>
+        <h2>ルーム作成完了！</h2>
+        <p style="color: #9aa5d1; font-size: 14px; margin-bottom: 10px;">このコードを相手に伝えてください</p>
+        <div id="room-code-display" class="room-code-display">----</div>
+        <div class="waiting-text">対戦相手を待っています<span class="dots"></span></div>
+    </div>
+
+    <!-- Game Screen -->
+    <div id="game-screen" class="hidden">
+        <div class="container">
+            <h1>⚡ 電気イスゲーム ⚡</h1>
+            <div class="win-cond">🏆 8イニング / 40点獲得で勝ち / 3アウトで負け 🏆</div>
+
+            <div class="score-table-container">
+                <table class="score-table">
+                    <thead>
+                        <tr>
+                            <th>名前</th>
+                            <th>1</th><th>2</th><th>3</th><th>4</th>
+                            <th>5</th><th>6</th><th>7</th><th>8</th>
+                            <th>点数</th><th>残機</th>
+                        </tr>
+                    </thead>
+                    <tbody id="score-table-body"></tbody>
+                </table>
+            </div>
+
+            <div class="status-board">
+                <div id="p1-stat" class="player-stat">
+                    <div class="player-name-display" id="p1-name-display">PLAYER 1</div>
+                    <div class="score" id="p1-score">0</div>
+                    <div class="shocks" id="p1-shocks">💥 0/3</div>
+                </div>
+                <div id="p2-stat" class="player-stat">
+                    <div class="player-name-display" id="p2-name-display">PLAYER 2</div>
+                    <div class="score" id="p2-score">0</div>
+                    <div class="shocks" id="p2-shocks">💥 0/3</div>
+                </div>
+            </div>
+
+            <div id="game-message" class="message-area">接続中...</div>
+
+            <div class="chairs-container" id="chairs-grid"></div>
+        </div>
+
+        <div class="btn-container">
+            <button id="action-btn" class="btn" onclick="handleAction()" disabled>椅子を選択してください</button>
+        </div>
+
+        <!-- Waiting overlay (opponent's turn) -->
+        <div id="waiting-overlay" class="waiting-overlay hidden">
+            <div class="waiting-icon">⏳</div>
+            <div id="waiting-msg" class="waiting-msg">相手のターンです<span class="dots"></span></div>
+        </div>
+
+        <!-- Result overlay -->
+        <div id="result-overlay" class="result-overlay hidden">
+            <div id="result-big-text" class="result-big-text"></div>
+        </div>
+    </div>
+
+    <!-- Game Over Screen -->
+    <div id="gameover-screen" class="lobby-screen hidden">
+        <h1>⚡ ゲーム終了 ⚡</h1>
+        <div id="gameover-result" style="font-size: 28px; font-weight: 900; margin: 20px 0;"></div>
+        <div id="gameover-scores" style="margin: 20px 0;"></div>
+        <button class="btn" onclick="playAgain()">🔄 もう一度遊ぶ</button>
+    </div>
+
+    <script>
+        // === Audio ===
+        const audioCtx = new (window.AudioContext || window.webkitAudioContext)();
+
+        const sounds = {
+            select: () => {
+                const osc = audioCtx.createOscillator();
+                const gain = audioCtx.createGain();
+                osc.connect(gain); gain.connect(audioCtx.destination);
+                osc.frequency.setValueAtTime(800, audioCtx.currentTime);
+                osc.frequency.exponentialRampToValueAtTime(600, audioCtx.currentTime + 0.1);
+                gain.gain.setValueAtTime(0.3, audioCtx.currentTime);
+                gain.gain.exponentialRampToValueAtTime(0.01, audioCtx.currentTime + 0.1);
+                osc.start(audioCtx.currentTime); osc.stop(audioCtx.currentTime + 0.1);
+            },
+            confirm: () => {
+                const osc = audioCtx.createOscillator();
+                const gain = audioCtx.createGain();
+                osc.connect(gain); gain.connect(audioCtx.destination);
+                osc.frequency.setValueAtTime(600, audioCtx.currentTime);
+                osc.frequency.exponentialRampToValueAtTime(900, audioCtx.currentTime + 0.15);
+                gain.gain.setValueAtTime(0.4, audioCtx.currentTime);
+                gain.gain.exponentialRampToValueAtTime(0.01, audioCtx.currentTime + 0.15);
+                osc.start(audioCtx.currentTime); osc.stop(audioCtx.currentTime + 0.15);
+            },
+            shock: () => {
+                const osc = audioCtx.createOscillator();
+                const gain = audioCtx.createGain();
+                const filter = audioCtx.createBiquadFilter();
+                osc.type = 'sawtooth'; filter.type = 'lowpass'; filter.frequency.value = 2000;
+                osc.connect(filter); filter.connect(gain); gain.connect(audioCtx.destination);
+                osc.frequency.setValueAtTime(150, audioCtx.currentTime);
+                for (let i = 0; i < 10; i++) {
+                    osc.frequency.setValueAtTime(150 + Math.random() * 100, audioCtx.currentTime + (i * 0.05));
+                }
+                gain.gain.setValueAtTime(0.5, audioCtx.currentTime);
+                gain.gain.exponentialRampToValueAtTime(0.01, audioCtx.currentTime + 0.5);
+                osc.start(audioCtx.currentTime); osc.stop(audioCtx.currentTime + 0.5);
+            },
+            safe: () => {
+                [523.25, 659.25, 783.99].forEach((freq, i) => {
+                    const osc = audioCtx.createOscillator();
+                    const gain = audioCtx.createGain();
+                    osc.connect(gain); gain.connect(audioCtx.destination);
+                    osc.frequency.value = freq;
+                    const t = audioCtx.currentTime + (i * 0.1);
+                    gain.gain.setValueAtTime(0.3, t);
+                    gain.gain.exponentialRampToValueAtTime(0.01, t + 0.3);
+                    osc.start(t); osc.stop(t + 0.3);
+                });
+            },
+            win: () => {
+                [523.25, 659.25, 783.99, 1046.50].forEach((freq, i) => {
+                    const osc = audioCtx.createOscillator();
+                    const gain = audioCtx.createGain();
+                    osc.connect(gain); gain.connect(audioCtx.destination);
+                    osc.frequency.value = freq;
+                    const t = audioCtx.currentTime + (i * 0.15);
+                    gain.gain.setValueAtTime(0.3, t);
+                    gain.gain.exponentialRampToValueAtTime(0.01, t + 0.4);
+                    osc.start(t); osc.stop(t + 0.4);
+                });
+            },
+        };
+
+        // === State ===
+        let ws = null;
+        let myId = null;     // 'p1' or 'p2'
+        let myName = '';
+        let opponentName = '';
+        let gameState = null; // latest state from server
+        let selectedChair = null;
+        let currentPhase = null; // 'SET_TRAP', 'CHOOSE_CHAIR', etc.
+        let isMyTurn = false;
+        let myRole = null;   // 'setter' or 'sitter' for current round
+
+        // === WebSocket ===
+        function connect() {
+            const protocol = location.protocol === 'https:' ? 'wss:' : 'ws:';
+            ws = new WebSocket(`${protocol}//${location.host}`);
+
+            ws.onopen = () => {
+                document.getElementById('connection-status').className = 'connection-status connected';
+                document.getElementById('connection-status').textContent = '接続中';
+            };
+
+            ws.onclose = () => {
+                document.getElementById('connection-status').className = 'connection-status disconnected';
+                document.getElementById('connection-status').textContent = '切断';
+                setTimeout(connect, 3000);
+            };
+
+            ws.onerror = () => {};
+
+            ws.onmessage = (event) => {
+                const msg = JSON.parse(event.data);
+                handleServerMessage(msg);
+            };
+        }
+
+        function sendMsg(msg) {
+            if (ws && ws.readyState === 1) {
+                ws.send(JSON.stringify(msg));
+            }
+        }
+
+        // === Lobby ===
+        function createRoom() {
+            const name = document.getElementById('my-name').value.trim() || 'Player 1';
+            myName = name;
+            // Resume audio context on user gesture
+            audioCtx.resume();
+            sendMsg({ type: 'CREATE_ROOM', playerName: name });
+        }
+
+        function joinRoom() {
+            const name = document.getElementById('my-name').value.trim() || 'Player 2';
+            const code = document.getElementById('room-code-input').value.trim().toUpperCase();
+            if (code.length !== 4) {
+                document.getElementById('lobby-error').textContent = '4文字のルームコードを入力してください';
+                return;
+            }
+            myName = name;
+            audioCtx.resume();
+            sendMsg({ type: 'JOIN_ROOM', roomCode: code, playerName: name });
+        }
+
+        // === Message Handler ===
+        function handleServerMessage(msg) {
+            switch (msg.type) {
+                case 'ROOM_CREATED':
+                    myId = msg.yourId;
+                    document.getElementById('lobby-screen').classList.add('hidden');
+                    document.getElementById('waiting-room-screen').classList.remove('hidden');
+                    document.getElementById('room-code-display').textContent = msg.roomCode;
+                    break;
+
+                case 'ROOM_JOINED':
+                    myId = msg.yourId;
+                    opponentName = msg.opponentName;
+                    document.getElementById('lobby-screen').classList.add('hidden');
+                    showGameScreen();
+                    break;
+
+                case 'OPPONENT_JOINED':
+                    opponentName = msg.opponentName;
+                    document.getElementById('waiting-room-screen').classList.add('hidden');
+                    showGameScreen();
+                    break;
+
+                case 'YOUR_TURN_SET_TRAP':
+                    gameState = msg;
+                    currentPhase = 'SET_TRAP';
+                    isMyTurn = true;
+                    myRole = 'setter';
+                    updateGameUI();
+                    hideWaitingOverlay();
+                    document.getElementById('game-message').textContent =
+                        `⚡ 第${msg.inning}イニング - ${msg.sitterName}に仕掛ける椅子を選べ！`;
+                    enableChairs();
+                    document.getElementById('action-btn').textContent = '椅子を選択してください';
+                    document.getElementById('action-btn').disabled = true;
+                    break;
+
+                case 'WAIT_FOR_TRAP':
+                    gameState = msg;
+                    currentPhase = 'SET_TRAP';
+                    isMyTurn = false;
+                    myRole = 'sitter';
+                    updateGameUI();
+                    showWaitingOverlay(`${msg.setterName}がトラップを仕掛けています`);
+                    disableChairs();
+                    document.getElementById('action-btn').disabled = true;
+                    document.getElementById('action-btn').textContent = '相手のターン';
+                    break;
+
+                case 'TRAP_SET_OK':
+                    // My trap was accepted, now waiting for sitter
+                    showWaitingOverlay(`相手が椅子を選んでいます`);
+                    disableChairs();
+                    document.getElementById('action-btn').disabled = true;
+                    document.getElementById('action-btn').textContent = '相手のターン';
+                    resetChairVisuals();
+                    break;
+
+                case 'YOUR_TURN_CHOOSE_CHAIR':
+                    gameState = msg;
+                    currentPhase = 'CHOOSE_CHAIR';
+                    isMyTurn = true;
+                    myRole = 'sitter';
+                    updateGameUI();
+                    hideWaitingOverlay();
+                    document.getElementById('game-message').textContent =
+                        `💺 第${msg.inning}イニング - 座る椅子を選べ！`;
+                    enableChairs();
+                    selectedChair = null;
+                    document.getElementById('action-btn').textContent = '椅子を選択してください';
+                    document.getElementById('action-btn').disabled = true;
+                    break;
+
+                case 'WAIT_FOR_CHOICE':
+                    gameState = msg;
+                    currentPhase = 'CHOOSE_CHAIR';
+                    isMyTurn = false;
+                    myRole = 'setter';
+                    updateGameUI();
+                    showWaitingOverlay(`${msg.sitterName}が椅子を選んでいます`);
+                    disableChairs();
+                    document.getElementById('action-btn').disabled = true;
+                    document.getElementById('action-btn').textContent = '相手のターン';
+                    break;
+
+                case 'REVEAL':
+                    hideWaitingOverlay();
+                    handleReveal(msg);
+                    break;
+
+                case 'GAME_OVER':
+                    handleGameOver(msg);
+                    break;
+
+                case 'GAME_RESET':
+                    // Reset local state for new game
+                    selectedChair = null;
+                    currentPhase = null;
+                    isMyTurn = false;
+                    showScreen('game-screen');
+                    initChairGrid();
+                    break;
+
+                case 'OPPONENT_DISCONNECTED':
+                    document.getElementById('game-message').innerHTML =
+                        '<span style="color:var(--danger-color)">相手が切断しました</span>';
+                    disableChairs();
+                    document.getElementById('action-btn').textContent = '🔄 ロビーに戻る';
+                    document.getElementById('action-btn').disabled = false;
+                    document.getElementById('action-btn').onclick = () => location.reload();
+                    hideWaitingOverlay();
+                    break;
+
+                case 'ERROR':
+                    const lobbyErr = document.getElementById('lobby-error');
+                    if (lobbyErr && !document.getElementById('lobby-screen').classList.contains('hidden')) {
+                        lobbyErr.textContent = msg.message;
+                    } else {
+                        document.getElementById('game-message').textContent = msg.message;
+                    }
+                    break;
+            }
+        }
+
+        // === Screen Management ===
+        function showScreen(screenId) {
+            ['lobby-screen', 'waiting-room-screen', 'game-screen', 'gameover-screen'].forEach(id => {
+                document.getElementById(id).classList.toggle('hidden', id !== screenId);
+            });
+        }
+
+        function showGameScreen() {
+            showScreen('game-screen');
+            initChairGrid();
+            // Set player names
+            if (myId === 'p1') {
+                document.getElementById('p1-name-display').textContent = myName;
+                document.getElementById('p2-name-display').textContent = opponentName;
+            } else {
+                document.getElementById('p1-name-display').textContent = opponentName;
+                document.getElementById('p2-name-display').textContent = myName;
+            }
+            document.getElementById('game-message').textContent = 'ゲーム開始！';
+        }
+
+        function initChairGrid() {
+            const grid = document.getElementById('chairs-grid');
+            grid.innerHTML = '';
+            for (let i = 1; i <= 12; i++) {
+                const div = document.createElement('div');
+                div.className = 'chair';
+                div.textContent = i;
+                div.id = `chair-${i}`;
+                div.onclick = () => selectChair(i);
+                grid.appendChild(div);
+            }
+        }
+
+        // === Chair Interaction ===
+        function selectChair(num) {
+            if (!isMyTurn) return;
+            const chairs = gameState ? gameState.chairs : Array(12).fill(true);
+            if (!chairs[num - 1]) return;
+
+            sounds.select();
+            document.querySelectorAll('.chair').forEach(c => c.classList.remove('selected'));
+            document.getElementById(`chair-${num}`).classList.add('selected');
+            selectedChair = num;
+
+            const btn = document.getElementById('action-btn');
+            btn.disabled = false;
+            if (currentPhase === 'SET_TRAP') {
+                btn.textContent = `「${num}」に仕掛ける ⚡`;
+            } else {
+                btn.textContent = `「${num}」に座る 💺`;
+            }
+        }
+
+        function handleAction() {
+            if (!selectedChair || !isMyTurn) return;
+            sounds.confirm();
+
+            const btn = document.getElementById('action-btn');
+            btn.disabled = true;
+
+            if (currentPhase === 'SET_TRAP') {
+                sendMsg({ type: 'SET_TRAP', chair: selectedChair });
+            } else if (currentPhase === 'CHOOSE_CHAIR') {
+                sendMsg({ type: 'CHOOSE_CHAIR', chair: selectedChair });
+                btn.textContent = '⏳ 判定中...';
+            }
+
+            selectedChair = null;
+            isMyTurn = false;
+        }
+
+        function enableChairs() {
+            const chairs = gameState ? gameState.chairs : Array(12).fill(true);
+            for (let i = 1; i <= 12; i++) {
+                const div = document.getElementById(`chair-${i}`);
+                if (!div) continue;
+                if (!chairs[i - 1]) {
+                    div.classList.add('removed');
+                } else {
+                    div.classList.remove('disabled', 'removed');
+                }
+            }
+        }
+
+        function disableChairs() {
+            document.querySelectorAll('.chair').forEach(c => {
+                if (!c.classList.contains('removed')) {
+                    c.classList.add('disabled');
+                }
+            });
+        }
+
+        function resetChairVisuals() {
+            document.querySelectorAll('.chair').forEach(c => {
+                c.classList.remove('selected', 'result-safe', 'result-out', 'revealed-trap');
+                const num = c.id.replace('chair-', '');
+                c.innerHTML = num;
+            });
+        }
+
+        // === Waiting Overlay ===
+        function showWaitingOverlay(text) {
+            document.getElementById('waiting-msg').innerHTML = text + '<span class="dots"></span>';
+            document.getElementById('waiting-overlay').classList.remove('hidden');
+        }
+
+        function hideWaitingOverlay() {
+            document.getElementById('waiting-overlay').classList.add('hidden');
+        }
+
+        // === Reveal ===
+        function handleReveal(msg) {
+            gameState = msg;
+            resetChairVisuals();
+            enableChairs();
+
+            const chosenDiv = document.getElementById(`chair-${msg.chosenChair}`);
+            const trapDiv = document.getElementById(`chair-${msg.trapChair}`);
+
+            // Highlight chosen chair
+            chosenDiv.classList.add('selected');
+
+            setTimeout(() => {
+                if (msg.result === 'OUT') {
+                    sounds.shock();
+                    document.body.classList.add('shock-effect');
+                    chosenDiv.classList.remove('selected');
+                    chosenDiv.classList.add('result-out');
+                    showBigResult('⚡ ビリビリ! ⚡', 'res-out-txt');
+                } else {
+                    sounds.safe();
+                    chosenDiv.classList.remove('selected');
+                    chosenDiv.classList.add('result-safe');
+                    showBigResult('⭕ セーフ! ⭕', 'res-safe-txt');
+
+                    const popup = document.createElement('div');
+                    popup.className = 'point-popup';
+                    popup.textContent = `+${msg.chosenChair}`;
+                    chosenDiv.appendChild(popup);
+
+                    // Show trap location
+                    if (trapDiv && msg.trapChair !== msg.chosenChair) {
+                        trapDiv.classList.add('revealed-trap');
+                    }
+                }
+
+                updateScores(msg);
+                renderScoreTable(msg);
+
+                setTimeout(() => {
+                    document.body.classList.remove('shock-effect');
+                    document.getElementById('result-overlay').classList.add('hidden');
+                    resetChairVisuals();
+                    // Update removed chairs
+                    if (msg.chairs) {
+                        for (let i = 0; i < 12; i++) {
+                            if (!msg.chairs[i]) {
+                                document.getElementById(`chair-${i + 1}`).classList.add('removed');
+                            }
+                        }
+                    }
+                    // Send ack
+                    sendMsg({ type: 'REVEAL_ACK' });
+                    document.getElementById('game-message').textContent = '次のラウンドを準備中...';
+                    document.getElementById('action-btn').textContent = '待機中...';
+                    document.getElementById('action-btn').disabled = true;
+                }, 2500);
+            }, 800);
+        }
+
+        function showBigResult(text, cls) {
+            const el = document.getElementById('result-big-text');
+            el.textContent = text;
+            el.className = 'result-big-text ' + cls;
+            document.getElementById('result-overlay').classList.remove('hidden');
+        }
+
+        // === Game Over ===
+        function handleGameOver(msg) {
+            sounds.win();
+            hideWaitingOverlay();
+
+            setTimeout(() => {
+                showScreen('gameover-screen');
+
+                const resultEl = document.getElementById('gameover-result');
+                if (msg.winnerId === 'draw') {
+                    resultEl.innerHTML = '<span style="color: var(--accent-color);">🤝 引き分け！ 🤝</span>';
+                } else if (msg.winnerId === myId) {
+                    resultEl.innerHTML = '<span style="color: var(--safe-color);">🎊 あなたの勝ち！ 🎊</span>';
+                } else {
+                    resultEl.innerHTML = '<span style="color: var(--danger-color);">💀 あなたの負け... 💀</span>';
+                }
+
+                const p1Name = myId === 'p1' ? myName : opponentName;
+                const p2Name = myId === 'p2' ? myName : opponentName;
+
+                document.getElementById('gameover-scores').innerHTML = `
+                    <div style="font-size: 18px; color: #9aa5d1; margin-bottom: 10px;">最終スコア</div>
+                    <div style="font-size: 24px; font-weight: 900;">
+                        <span style="color: var(--accent-color)">${p1Name}</span>
+                        <span style="color: #fff; margin: 0 15px;">${msg.scores.p1}</span>
+                        <span style="color: #5a6ba8;">vs</span>
+                        <span style="color: #fff; margin: 0 15px;">${msg.scores.p2}</span>
+                        <span style="color: var(--accent-color)">${p2Name}</span>
+                    </div>
+                `;
+            }, 1500);
+        }
+
+        function playAgain() {
+            sendMsg({ type: 'PLAY_AGAIN' });
+        }
+
+        // === UI Updates ===
+        function updateGameUI() {
+            if (!gameState) return;
+            updateScores(gameState);
+            renderScoreTable(gameState);
+
+            // Update removed chairs
+            if (gameState.chairs) {
+                for (let i = 0; i < 12; i++) {
+                    const div = document.getElementById(`chair-${i + 1}`);
+                    if (div && !gameState.chairs[i]) {
+                        div.classList.add('removed');
+                    }
+                }
+            }
+
+            // Active player highlight
+            const p1Stat = document.getElementById('p1-stat');
+            const p2Stat = document.getElementById('p2-stat');
+            p1Stat.classList.remove('active');
+            p2Stat.classList.remove('active');
+
+            if (isMyTurn) {
+                document.getElementById(myId === 'p1' ? 'p1-stat' : 'p2-stat').classList.add('active');
+            }
+        }
+
+        function updateScores(data) {
+            document.getElementById('p1-score').textContent = data.scores.p1;
+            document.getElementById('p2-score').textContent = data.scores.p2;
+            document.getElementById('p1-shocks').textContent = `💥 ${data.outs.p1}/3`;
+            document.getElementById('p2-shocks').textContent = `💥 ${data.outs.p2}/3`;
+        }
+
+        function renderScoreTable(data) {
+            if (!data) return;
+            const p1Name = myId === 'p1' ? myName : opponentName;
+            const p2Name = myId === 'p2' ? myName : opponentName;
+
+            let html = '';
+            ['p1', 'p2'].forEach(pid => {
+                const name = pid === 'p1' ? p1Name : p2Name;
+                const isMe = pid === myId;
+                html += '<tr>';
+                html += `<td class="player-name">${name}${isMe ? '<span class="you-marker">(あなた)</span>' : ''}</td>`;
+                for (let i = 0; i < 8; i++) {
+                    const val = data.innings[pid][i];
+                    const isCurrent = (i + 1 === data.inning) && isMyTurn;
+                    const cellClass = isCurrent ? 'current-inning' : '';
+                    let display = '-', valClass = '';
+                    if (val === 'OUT') { display = 'OUT'; valClass = 'inning-score-out'; }
+                    else if (val !== null) { display = val; valClass = 'inning-score-safe'; }
+                    html += `<td class="${cellClass} ${valClass}">${display}</td>`;
+                }
+                html += `<td class="total-score">${data.scores[pid]}</td>`;
+                html += `<td class="remaining-life">${3 - data.outs[pid]}</td>`;
+                html += '</tr>';
+            });
+            document.getElementById('score-table-body').innerHTML = html;
+        }
+
+        // === Init ===
+        connect();
+    </script>
+</body>
+</html>

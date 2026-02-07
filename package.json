@@ -1,0 +1,12 @@
+{
+  "name": "electric-chair-game",
+  "version": "1.0.0",
+  "description": "電気イスゲーム - 同一WiFi対戦版",
+  "main": "server.js",
+  "scripts": {
+    "start": "node server.js"
+  },
+  "dependencies": {
+    "ws": "^8.16.0"
+  }
+}
