@@ -7,6 +7,7 @@ const { WebSocketServer } = require('ws');
 const PORT = process.env.PORT || 3000;
 const rooms = new Map();
 const playerRoomMap = new Map(); // ws -> roomCode
+let waitingPlayer = null; // auto-match queue (single player)
 
 // --- HTTP Server (static file serving) ---
 const server = http.createServer((req, res) => {
@@ -163,6 +164,50 @@ function handleMessage(ws, data) {
   }
 
   switch (msg.type) {
+    case 'QUICK_MATCH': {
+      const name = (msg.playerName || 'Player').slice(0, 10);
+
+      // Check if there's someone waiting
+      if (waitingPlayer && waitingPlayer.ws.readyState === 1 && waitingPlayer.ws !== ws) {
+        // Match found! Create room and start
+        const roomCode = generateRoomCode();
+        const room = createRoom(roomCode);
+        room.players.push({ ws: waitingPlayer.ws, id: 'p1', name: waitingPlayer.name });
+        room.players.push({ ws, id: 'p2', name });
+        rooms.set(roomCode, room);
+        playerRoomMap.set(waitingPlayer.ws, roomCode);
+        playerRoomMap.set(ws, roomCode);
+
+        send(waitingPlayer.ws, {
+          type: 'MATCH_FOUND',
+          roomCode,
+          yourId: 'p1',
+          opponentName: name,
+        });
+        send(ws, {
+          type: 'MATCH_FOUND',
+          roomCode,
+          yourId: 'p2',
+          opponentName: waitingPlayer.name,
+        });
+
+        waitingPlayer = null;
+        setTimeout(() => startSetTrapPhase(room), 1500);
+      } else {
+        // No one waiting, enter queue
+        waitingPlayer = { ws, name };
+        send(ws, { type: 'WAITING_FOR_MATCH' });
+      }
+      break;
+    }
+
+    case 'CANCEL_MATCH': {
+      if (waitingPlayer && waitingPlayer.ws === ws) {
+        waitingPlayer = null;
+      }
+      break;
+    }
+
     case 'CREATE_ROOM': {
       const name = (msg.playerName || 'Player 1').slice(0, 10);
       const roomCode = generateRoomCode();
@@ -396,6 +441,11 @@ function handleMessage(ws, data) {
 }
 
 function handleDisconnect(ws) {
+  // Remove from waiting queue if applicable
+  if (waitingPlayer && waitingPlayer.ws === ws) {
+    waitingPlayer = null;
+  }
+
   const roomCode = playerRoomMap.get(ws);
   if (!roomCode) return;
 

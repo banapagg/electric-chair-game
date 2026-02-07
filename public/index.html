@@ -676,27 +676,29 @@
             <input type="text" id="my-name" maxlength="10" placeholder="例：たろう">
         </div>
 
-        <button class="btn" onclick="createRoom()" id="create-btn" style="margin-bottom: 15px;">ルームを作成</button>
+        <button class="btn" onclick="quickMatch()" id="quick-match-btn">🎮 対戦する！</button>
 
-        <div class="lobby-divider"><span>または</span></div>
+        <div class="lobby-divider"><span>ルームコードで合流</span></div>
 
-        <div class="input-group">
-            <label for="room-code-input">ルームコードを入力</label>
-            <input type="text" id="room-code-input" maxlength="4" placeholder="例：ABCD" style="text-transform: uppercase; letter-spacing: 8px; font-size: 24px;">
+        <div style="display: flex; gap: 8px;">
+            <button class="btn btn-secondary" onclick="createRoom()" style="flex: 1; font-size: 14px; padding: 12px;">ルーム作成</button>
+            <input type="text" id="room-code-input" maxlength="4" placeholder="コード" style="flex: 1; padding: 12px; font-size: 18px; border: 2px solid #3d4a78; border-radius: 12px; background: rgba(0,0,0,0.3); color: #fff; font-family: 'Noto Sans JP', sans-serif; font-weight: 700; text-transform: uppercase; letter-spacing: 4px; text-align: center;">
+            <button class="btn btn-secondary" onclick="joinRoom()" style="flex: 1; font-size: 14px; padding: 12px;">参加</button>
         </div>
-
-        <button class="btn btn-secondary" onclick="joinRoom()" id="join-btn">ルームに参加</button>
 
         <div id="lobby-error" class="error-text"></div>
     </div>
 
-    <!-- Waiting Room Screen -->
+    <!-- Waiting Screen (auto-match & room) -->
     <div id="waiting-room-screen" class="lobby-screen hidden">
         <h1>⚡ 電気イスゲーム ⚡</h1>
-        <h2>ルーム作成完了！</h2>
-        <p style="color: #9aa5d1; font-size: 14px; margin-bottom: 10px;">このコードを相手に伝えてください</p>
-        <div id="room-code-display" class="room-code-display">----</div>
+        <h2 id="waiting-title">対戦相手を探しています</h2>
+        <div id="waiting-room-code" class="hidden">
+            <p style="color: #9aa5d1; font-size: 14px; margin-bottom: 10px;">このコードを相手に伝えてください</p>
+            <div id="room-code-display" class="room-code-display">----</div>
+        </div>
         <div class="waiting-text">対戦相手を待っています<span class="dots"></span></div>
+        <button class="btn btn-secondary" onclick="cancelMatch()" style="margin-top: 20px; max-width: 200px;">キャンセル</button>
     </div>
 
     <!-- Game Screen -->
@@ -868,10 +870,22 @@
         }
 
         // === Lobby ===
+        function quickMatch() {
+            const name = document.getElementById('my-name').value.trim() || 'Player';
+            myName = name;
+            audioCtx.resume();
+            sendMsg({ type: 'QUICK_MATCH', playerName: name });
+        }
+
+        function cancelMatch() {
+            sendMsg({ type: 'CANCEL_MATCH' });
+            document.getElementById('waiting-room-screen').classList.add('hidden');
+            document.getElementById('lobby-screen').classList.remove('hidden');
+        }
+
         function createRoom() {
             const name = document.getElementById('my-name').value.trim() || 'Player 1';
             myName = name;
-            // Resume audio context on user gesture
             audioCtx.resume();
             sendMsg({ type: 'CREATE_ROOM', playerName: name });
         }
@@ -891,10 +905,26 @@
         // === Message Handler ===
         function handleServerMessage(msg) {
             switch (msg.type) {
+                case 'WAITING_FOR_MATCH':
+                    document.getElementById('lobby-screen').classList.add('hidden');
+                    document.getElementById('waiting-room-screen').classList.remove('hidden');
+                    document.getElementById('waiting-title').textContent = '対戦相手を探しています';
+                    document.getElementById('waiting-room-code').classList.add('hidden');
+                    break;
+
+                case 'MATCH_FOUND':
+                    myId = msg.yourId;
+                    opponentName = msg.opponentName;
+                    document.getElementById('waiting-room-screen').classList.add('hidden');
+                    showGameScreen();
+                    break;
+
                 case 'ROOM_CREATED':
                     myId = msg.yourId;
                     document.getElementById('lobby-screen').classList.add('hidden');
                     document.getElementById('waiting-room-screen').classList.remove('hidden');
+                    document.getElementById('waiting-title').textContent = 'ルーム作成完了！';
+                    document.getElementById('waiting-room-code').classList.remove('hidden');
                     document.getElementById('room-code-display').textContent = msg.roomCode;
                     break;
 
